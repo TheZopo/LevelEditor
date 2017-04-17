@@ -50,10 +50,15 @@ public class Level {
 		Level level = null;
 		try {
 			File f = new File(Level.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "/" + name + ".yml");
-			Logger.info(f);
 			
-			YamlReader reader = new YamlReader(new FileReader(f));
-			level = reader.read(Level.class);
+			if(f.exists()) {
+				YamlReader reader = new YamlReader(new FileReader(f));
+				level = reader.read(Level.class);				
+			}
+			else {
+				level = new Level("current", 20, 20);
+				level.save();
+			}
 		} catch (FileNotFoundException | NullPointerException | URISyntaxException e) {
 			Logger.error("Level \"" + name + "\" does not exists !");
 		} catch (YamlException e) {
