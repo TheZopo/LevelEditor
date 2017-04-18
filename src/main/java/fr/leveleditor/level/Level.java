@@ -88,14 +88,17 @@ public class Level {
 	}
 	
 	public void render() {
+		final float layer = LevelEditor.instance.getActiveLayer();
 		Texture.tiles.bind();
 		glBegin(GL_TRIANGLES);
-			for(int i = 0; i < LevelEditor.instance.getActiveLayer() + 1; i++) {
+			for(int i = 0; i < (layer < 3 ? layer + 1 : 3); i++) {
+				if(i < layer && layer < 3) glColor3f(0.7f, 0.7f, 0.7f);
 				for(int j = 0; j < sizeX; j++) {
 					for(int k = 0; k < sizeY; k++) {
 						tiles[i][j][k].render(j, k);
 					}
 				}
+				glColor3f(1, 1, 1);
 			}
 		glEnd();
 		Texture.tiles.unbind();

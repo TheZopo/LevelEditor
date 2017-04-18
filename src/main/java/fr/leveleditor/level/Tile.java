@@ -112,17 +112,17 @@ public enum Tile {
 		final float size = Texture.tiles.getTileSize();
 		
 		glTexCoord2f(texX, texY);
-		glVertex2f(x * scale, y * scale);
+		glVertex2f(x * scale, 32 + y * scale);
 		glTexCoord2f(texX + size, texY);
-		glVertex2f((x + 1) * scale, y * scale);
+		glVertex2f((x + 1) * scale, 32 + y * scale);
 		glTexCoord2f(texX, texY + size);
-		glVertex2f(x * scale, (y + 1) * scale);
+		glVertex2f(x * scale, 32 + (y + 1) * scale);
 		
 		glTexCoord2f(texX, texY + size);
-		glVertex2f(x * scale, (y + 1) * scale);
+		glVertex2f(x * scale, 32 + (y + 1) * scale);
 		glTexCoord2f(texX + size, texY);
-		glVertex2f((x + 1) * scale, y * scale);
+		glVertex2f((x + 1) * scale, 32 + y * scale);
 		glTexCoord2f(texX + size, texY + size);
-		glVertex2f((x + 1) * scale, (y + 1) * scale);
+		glVertex2f((x + 1) * scale, 32 + (y + 1) * scale);
 	}
 }

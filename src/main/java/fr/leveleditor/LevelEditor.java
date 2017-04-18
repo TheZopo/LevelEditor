@@ -13,6 +13,9 @@ import fr.leveleditor.graphic.Texture;
 import fr.leveleditor.input.CursorManager;
 import fr.leveleditor.input.MouseManager;
 import fr.leveleditor.level.Level;
+import fr.leveleditor.menu.Menu;
+import fr.leveleditor.menu.MenuCallback;
+import fr.leveleditor.menu.MenuItem;
 import fr.leveleditor.utils.Logger;
 import fr.leveleditor.utils.Window;
 
@@ -30,6 +33,7 @@ public class LevelEditor {
 	
 	private boolean running = false;
 	private Level level;
+	private Menu menu;
 	
 	private int[] selectedTile = {0, 0};
 	private int[] overTile = {0, 0};
@@ -48,7 +52,7 @@ public class LevelEditor {
 		glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 		
 		
-		long id = glfwCreateWindow(width, height, title + " | Couche : 1", 0, 0);
+		long id = glfwCreateWindow(width, height, title, 0, 0);
 		Window.list.add(new Window(id, width, height));
 		id = glfwCreateWindow(width / 2, height / 2, "TileSet", 0, id);
 		Window.list.add(new Window(id, width / 2, height / 2));
@@ -82,6 +86,31 @@ public class LevelEditor {
 		}
 		
 		level = Level.load("current");
+		menu = new Menu("Barr Menu", 32);
+		menu.add(new MenuItem(32, Texture.menu, 0, 0, new MenuCallback() {
+			public void callback() {
+				activeLayer = 0;
+			}
+		}));
+		
+		menu.add(new MenuItem(32, Texture.menu, 1, 0, new MenuCallback() {
+			public void callback() {
+				activeLayer = 1;
+			}
+		}));
+		
+		menu.add(new MenuItem(32, Texture.menu, 2, 0, new MenuCallback() {
+			public void callback() {
+				activeLayer = 2;
+			}
+		}));
+		
+		menu.add(new MenuItem(32, Texture.menu, 3, 0, new MenuCallback() {
+			public void callback() {
+				activeLayer = 3;
+			}
+		}));
+		
 		
 		running = true;
 		mainLoop();
@@ -95,6 +124,7 @@ public class LevelEditor {
 		
 		glfwSetWindowSizeCallback(Window.list.get(0).getId(), new GLFWWindowSizeCallback(){
 			public void invoke(long window, int width, int height) {
+				setWidth(width);
 				glfwMakeContextCurrent(window);
 				glViewport(0, 0, width, height);
 				
@@ -116,8 +146,9 @@ public class LevelEditor {
 		});
 		
 		overTile[0] = (int) (CursorManager.posX / scale);
-		overTile[1] = (int) (CursorManager.posY / scale);
+		overTile[1] = (int) ((CursorManager.posY - 32) / scale);
 		
+		menu.update();
 		level.update();
 	}
 	
@@ -142,13 +173,15 @@ public class LevelEditor {
 				
 				glBegin(GL_LINE_LOOP);
 					glColor4f(0, 0, 0, 1);
-					glVertex2f(overTile[0] * scale, overTile[1] * scale + 1);
-					glVertex2f((overTile[0] + 1) * scale, overTile[1] * scale + 1);
-					glVertex2f((overTile[0] + 1) * scale, (overTile[1] + 1) * scale);
-					glVertex2f(overTile[0] * scale + 1, (overTile[1] + 1) * scale);
-					glVertex2f(overTile[0] * scale + 1, overTile[1] * scale + 1);
+					glVertex2f(overTile[0] * scale, 32 + overTile[1] * scale + 1);
+					glVertex2f((overTile[0] + 1) * scale, 32 + overTile[1] * scale + 1);
+					glVertex2f((overTile[0] + 1) * scale, 32 + (overTile[1] + 1) * scale);
+					glVertex2f(overTile[0] * scale, 32 + (overTile[1] + 1) * scale);
+					glVertex2f(overTile[0] * scale, 32 + overTile[1] * scale + 1);
 					glColor4f(1, 1, 1, 1);
 				glEnd();
+				
+				menu.render();
 			}
 			else {
 				Texture.tiles.bind();
@@ -245,17 +278,18 @@ public class LevelEditor {
 		return selectedTile;
 	}
 	
-	public void updateActiveLayer() {
-		if(activeLayer < 2) activeLayer++;
-		else activeLayer = 0;
-		
-    	glfwSetWindowTitle(Window.list.get(0).getId(), title + " | Couche : " + (activeLayer + 1));
-	}
-	
 	public int getActiveLayer() {
 		return activeLayer;
 	}
 	
+	public int getWidth() {
+		return width;
+	}
+
+	public void setWidth(int width) {
+		LevelEditor.width = width;
+	}
+
 	public static void main(String[] args) {
 		new LevelEditor();
 	}

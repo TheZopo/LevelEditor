@@ -20,6 +20,7 @@ public class Texture {
 	private float tileSize;
 	
 	public static Texture tiles = Texture.loadTexture("tiles.png");
+	public static Texture menu = Texture.loadTexture("menubarr.png");
 	
 	public Texture(int id, int width, int height) {
 		this.id = id;
