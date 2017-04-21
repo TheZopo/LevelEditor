@@ -125,4 +125,12 @@ public enum Tile {
 		glTexCoord2f(texX + size, texY + size);
 		glVertex2f((x + 1) * scale, 32 + (y + 1) * scale);
 	}
+	
+	public int getX() {
+		return (int) (texX / Texture.tiles.getTileSize());
+	}
+	
+	public int getY() {
+		return (int) (texY / Texture.tiles.getTileSize());
+	}
 }

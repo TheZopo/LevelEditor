@@ -4,7 +4,15 @@ import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.opengl.GL11.*;
 
+import java.io.File;
+
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.UIManager;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWScrollCallback;
 import org.lwjgl.glfw.GLFWWindowSizeCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
@@ -13,9 +21,11 @@ import fr.leveleditor.graphic.Texture;
 import fr.leveleditor.input.CursorManager;
 import fr.leveleditor.input.MouseManager;
 import fr.leveleditor.level.Level;
+import fr.leveleditor.level.Tile;
 import fr.leveleditor.menu.Menu;
 import fr.leveleditor.menu.MenuCallback;
 import fr.leveleditor.menu.MenuItem;
+import fr.leveleditor.menu.NewLevel;
 import fr.leveleditor.utils.Logger;
 import fr.leveleditor.utils.Window;
 
@@ -23,21 +33,22 @@ public class LevelEditor {
 	public static LevelEditor instance;
 	
 	private float scale = 60;
-	private int maxTicks = 60;
-	private int maxFPS = 120;
+	private int maxTicks = 30;
+	private int maxFPS = 60;
 	private int tileRes = 32;
 	
-	private static int width = 600;
-	private int height = 600;
+	private static int width = 1000;
+	private int height = 700;
 	private String title = "Editeur de niveau";
 	
 	private boolean running = false;
 	private Level level;
 	private Menu menu;
 	
-	private int[] selectedTile = {0, 0};
+	private Tile selectedTile;
 	private int[] overTile = {0, 0};
 	private int activeLayer = 0;
+	private int tool = 0;
 	
 	public LevelEditor() {
 		instance = this;
@@ -86,31 +97,97 @@ public class LevelEditor {
 		}
 		
 		level = Level.load("current");
+		selectedTile = Tile.NULL;
+		
+	    try { 
+	    	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+	    } 
+	    catch(Exception e){ 
+	    	Logger.error("Impossible to load Look and Feel");
+	    	e.printStackTrace();
+	    }
+	   
+		
 		menu = new Menu("Barr Menu", 32);
+		
 		menu.add(new MenuItem(32, Texture.menu, 0, 0, new MenuCallback() {
 			public void callback() {
-				activeLayer = 0;
+				new NewLevel();
 			}
 		}));
 		
 		menu.add(new MenuItem(32, Texture.menu, 1, 0, new MenuCallback() {
 			public void callback() {
-				activeLayer = 1;
+				JFileChooser chooser = new JFileChooser(new File("."));
+				
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("Fichiers YAML", "yml");
+				chooser.addChoosableFileFilter(filter);
+				chooser.setAcceptAllFileFilterUsed(false);
+				
+				chooser.showOpenDialog(null);
+				
+				if(chooser.getSelectedFile() != null) {
+					level = Level.loadFromPath(chooser.getSelectedFile().getAbsolutePath());
+				}
 			}
 		}));
 		
 		menu.add(new MenuItem(32, Texture.menu, 2, 0, new MenuCallback() {
 			public void callback() {
+				level.save();
+				Logger.info("Level saved !");
+				
+				JOptionPane.showMessageDialog(null, "Le niveau \"" + level.getName() +"\" a bien été sauvegardé !", "Niveau sauvegardé", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}));
+		
+		//Separateur
+		menu.add(new MenuItem(0, Texture.menu, 0, 0, null));
+		
+		menu.add(new MenuItem(32, Texture.menu, 0, 1, new MenuCallback() {
+			public void callback() {
+				activeLayer = 0;
+			}
+		}));
+		
+		menu.add(new MenuItem(32, Texture.menu, 1, 1, new MenuCallback() {
+			public void callback() {
+				activeLayer = 1;
+			}
+		}));
+		
+		menu.add(new MenuItem(32, Texture.menu, 2, 1, new MenuCallback() {
+			public void callback() {
 				activeLayer = 2;
 			}
 		}));
 		
-		menu.add(new MenuItem(32, Texture.menu, 3, 0, new MenuCallback() {
+		menu.add(new MenuItem(32, Texture.menu, 3, 1, new MenuCallback() {
 			public void callback() {
 				activeLayer = 3;
 			}
 		}));
 		
+		//Separateur
+		menu.add(new MenuItem(0, Texture.menu, 0, 0, null));
+		
+		menu.add(new MenuItem(32, Texture.menu, 0, 2, new MenuCallback() {
+			public void callback() {
+				tool = 0;
+			}
+		}));
+		
+		menu.add(new MenuItem(32, Texture.menu, 1, 2, new MenuCallback() {
+			public void callback() {
+				tool = 1;
+			}
+		}));
+		
+		menu.add(new MenuItem(32, Texture.menu, 2, 2, new MenuCallback() {
+			public void callback() {
+				tool = 2;
+			}
+		}));
 		
 		running = true;
 		mainLoop();
@@ -145,9 +222,40 @@ public class LevelEditor {
 			}
 		});
 		
-		overTile[0] = (int) (CursorManager.posX / scale);
-		overTile[1] = (int) ((CursorManager.posY - 32) / scale);
+		glfwSetScrollCallback(Window.list.get(0).getId(), new GLFWScrollCallback() {
+			public void invoke(long window, double xoffset, double yoffset) {
+				scale += 2 * yoffset;
+			}
+		});
 		
+		int x = (int) CursorManager.posX / (int) scale;
+		int y = (int) (CursorManager.posY - 32) / (int) scale;
+		int layer = activeLayer < 3 ? activeLayer : 2;
+		if(MouseManager.isDown(GLFW_MOUSE_BUTTON_LEFT, 0) && CursorManager.posY > 32) {
+			if(x >= 0 && x < level.getSizeX() && y >= 0 && y < level.getSizeY()) {
+				if(tool == 0) level.getTiles()[layer][x][y] = selectedTile;
+				else if(tool == 1) level.remplissageDiffusion(layer, x, y, level.getTiles()[layer][x][y], selectedTile);
+				else if(tool == 2) level.getTiles()[layer][x][y] = Tile.NULL;
+			}
+		}
+		else if(MouseManager.isDown(GLFW_MOUSE_BUTTON_RIGHT, 0) && CursorManager.posY > 32) {
+			if(x >= 0 && x < level.getSizeX() && y >= 0 && y < level.getSizeY()) {
+				selectedTile = level.getTiles()[layer][x][y];
+			}
+			
+			if(tool == 2) tool = 0;
+		}
+		
+		if(MouseManager.isDown(GLFW_MOUSE_BUTTON_LEFT, 1)) {
+			selectedTile = Tile.fromCoord(CursorManager.posX / tileRes, CursorManager.posY / tileRes);
+			if(tool == 2) tool = 0;
+		}
+		
+		if(CursorManager.window == 0) {
+			overTile[0] = (int) (CursorManager.posX / scale);
+			overTile[1] = (int) ((CursorManager.posY - 32) / scale);
+		}
+
 		menu.update();
 		level.update();
 	}
@@ -164,11 +272,11 @@ public class LevelEditor {
 				
 				glBegin(GL_LINE_LOOP);
 					glColor4f(0, 0, 1, 1);
-					glVertex2f(0, 0);
-					glVertex2f(level.getSizeX() * scale, 0);
-					glVertex2f(level.getSizeX() * scale, level.getSizeY() * scale);
-					glVertex2f(0, level.getSizeY() * scale);
-					glVertex2f(0, 0);
+					glVertex2f(0, 32);
+					glVertex2f(level.getSizeX() * scale, 32);
+					glVertex2f(level.getSizeX() * scale, 32 + level.getSizeY() * scale);
+					glVertex2f(0, 32 + level.getSizeY() * scale);
+					glVertex2f(0, 32);
 				glEnd();
 				
 				glBegin(GL_LINE_LOOP);
@@ -199,11 +307,11 @@ public class LevelEditor {
 				
 				glBegin(GL_LINE_LOOP);
 					glColor4f(1, 0, 0, 1);
-					glVertex2f(selectedTile[0] * tileRes, selectedTile[1] * tileRes + 1);
-					glVertex2f((selectedTile[0] + 1) * tileRes, selectedTile[1] * tileRes + 1);
-					glVertex2f((selectedTile[0] + 1) * tileRes, (selectedTile[1] + 1) * tileRes);
-					glVertex2f(selectedTile[0] * tileRes + 1, (selectedTile[1] + 1) * tileRes);
-					glVertex2f(selectedTile[0] * tileRes + 1, selectedTile[1] * tileRes + 1);
+					glVertex2f(selectedTile.getX() * tileRes, selectedTile.getY() * tileRes + 1);
+					glVertex2f((selectedTile.getX() + 1) * tileRes, selectedTile.getY() * tileRes + 1);
+					glVertex2f((selectedTile.getX() + 1) * tileRes, (selectedTile.getY() + 1) * tileRes);
+					glVertex2f(selectedTile.getX() * tileRes + 1, (selectedTile.getY() + 1) * tileRes);
+					glVertex2f(selectedTile.getX() * tileRes + 1, selectedTile.getY() * tileRes + 1);
 					glColor4f(1, 1, 1, 1);
 				glEnd();
 			}
@@ -239,8 +347,6 @@ public class LevelEditor {
 	public void stop() {
 		running = false;
 		
-		level.save();
-		
 		for(Window window : Window.list) {
 			glfwFreeCallbacks(window.getId());
 			glfwDestroyWindow(window.getId());			
@@ -252,6 +358,10 @@ public class LevelEditor {
 	
 	public Level getLevel() {
 		return level;
+	}
+	
+	public void setLevel(Level level) {
+		this.level = level;
 	}
 	
 	public float getScale() {
@@ -270,14 +380,6 @@ public class LevelEditor {
 		return tileRes;
 	}
 	
-	public void setSelectedTile(int[] selectedTile) {
-		this.selectedTile = selectedTile;
-	}
-	
-	public int[] getSelectedTile() {
-		return selectedTile;
-	}
-	
 	public int getActiveLayer() {
 		return activeLayer;
 	}
@@ -288,6 +390,10 @@ public class LevelEditor {
 
 	public void setWidth(int width) {
 		LevelEditor.width = width;
+	}
+	
+	public int getTool() {
+		return tool;
 	}
 
 	public static void main(String[] args) {

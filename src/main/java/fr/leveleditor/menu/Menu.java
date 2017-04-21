@@ -25,17 +25,28 @@ public class Menu {
 			glColor3f(1, 1 ,1);
 		glEnd();
 		
-		final int layer = LevelEditor.instance.getActiveLayer();
+		final int layer = 3 + LevelEditor.instance.getActiveLayer();
 		glBegin(GL_LINE_LOOP);
 			glColor3f(0, 0, 0);
-			glVertex2i(10 + layer * 10 + layer * 32, 1);
-			glVertex2i(10 + layer * 10 + layer * 32 + 32, 1);
-			glVertex2i(10 + layer * 10 + layer * 32 + 32, 32);
-			glVertex2i(10 + layer * 10 + layer * 32, 32);
-			glVertex2i(10 + layer * 10 + layer * 32, 1);
+			glVertex2i(20 + layer * 10 + layer * 32, 1);
+			glVertex2i(20 + layer * 10 + layer * 32 + 32, 1);
+			glVertex2i(20 + layer * 10 + layer * 32 + 32, 32);
+			glVertex2i(20 + layer * 10 + layer * 32, 32);
+			glVertex2i(20 + layer * 10 + layer * 32, 1);
 			glColor3f(1, 1, 1);
 		glEnd();
 		
+		final int tool = 3 + 4 + LevelEditor.instance.getTool();
+		glBegin(GL_LINE_LOOP);
+		glColor3f(0, 0, 0);
+		glVertex2i(30 + tool * 10 + tool * 32, 1);
+		glVertex2i(30 + tool * 10 + tool * 32 + 32, 1);
+		glVertex2i(30 + tool * 10 + tool * 32 + 32, 32);
+		glVertex2i(30 + tool * 10 + tool * 32, 32);
+		glVertex2i(30 + tool * 10 + tool * 32, 1);
+		glColor3f(1, 1, 1);
+		glEnd();
+
 		for(MenuItem item : items) item.render();
 	}
 	

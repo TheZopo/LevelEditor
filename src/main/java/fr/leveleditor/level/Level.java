@@ -24,10 +24,18 @@ public class Level {
 	private int sizeX;
 	private int sizeY;
 	
+	private String path;
+	
 	public Level() {
 		this.name = "Unknow";
 		this.sizeX = 0;
 		this.sizeY = 0;
+		
+		try {
+			this.path = Level.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "/" + name + ".yml";
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public Level(String name, int sizeX, int sizeY) {
@@ -44,6 +52,12 @@ public class Level {
 				}
 			}
 		}
+		
+		try {
+			this.path = Level.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "/" + name + ".yml";
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public static Level load(String name) {
@@ -53,7 +67,8 @@ public class Level {
 			
 			if(f.exists()) {
 				YamlReader reader = new YamlReader(new FileReader(f));
-				level = reader.read(Level.class);				
+				level = reader.read(Level.class);
+				level.setPath(f.getAbsolutePath());
 			}
 			else {
 				level = new Level("current", 20, 20);
@@ -69,15 +84,36 @@ public class Level {
 		return level;
 	}
 	
+	public static Level loadFromPath(String path) {
+		Level level = null;
+		try {
+			File f = new File(path);
+			
+			if(f.exists()) {
+				YamlReader reader = new YamlReader(new FileReader(f));
+				level = reader.read(Level.class);
+				level.setPath(path);
+			}
+		} catch (FileNotFoundException | NullPointerException e) {
+			Logger.error("Level does not exists !");
+		} catch (YamlException e) {
+			Logger.error("Level is invalid !");
+			e.printStackTrace();
+		}
+		
+		return level;
+	}
+	
 	public void save() {
 		try {
-			File f = new File(Level.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "/" + name + ".yml");
+			File f = new File(path);
 			f.createNewFile();
+			Logger.info(path);
 			
 			YamlWriter writer = new YamlWriter(new FileWriter(f));
 			writer.write(this);
 			writer.close();
-		} catch (IOException | URISyntaxException e) {
+		} catch (IOException e) {
 			Logger.error("Impossible to acces to the save path !");
 			e.printStackTrace();
 		}
@@ -91,8 +127,9 @@ public class Level {
 		final float layer = LevelEditor.instance.getActiveLayer();
 		Texture.tiles.bind();
 		glBegin(GL_TRIANGLES);
-			for(int i = 0; i < (layer < 3 ? layer + 1 : 3); i++) {
+			for(int i = 0; i < 3; i++) {
 				if(i < layer && layer < 3) glColor3f(0.7f, 0.7f, 0.7f);
+				else if(i > layer) glColor4f(1, 1, 1, 0.25f);
 				for(int j = 0; j < sizeX; j++) {
 					for(int k = 0; k < sizeY; k++) {
 						tiles[i][j][k].render(j, k);
@@ -102,6 +139,16 @@ public class Level {
 			}
 		glEnd();
 		Texture.tiles.unbind();
+	}
+	
+	public void remplissageDiffusion(int layer, int x, int y, Tile tilecible, Tile tilerep) {
+		if(tiles[layer][x][y] == tilecible && tilecible != tilerep) {
+			tiles[layer][x][y] = tilerep;
+			if(x > 0) remplissageDiffusion(layer, x - 1, y, tilecible, tilerep);
+			if(x < sizeX - 1) remplissageDiffusion(layer, x + 1, y, tilecible, tilerep);
+			if(y > 0) remplissageDiffusion(layer, x, y - 1, tilecible, tilerep);
+			if(y < sizeY - 1) remplissageDiffusion(layer, x, y + 1, tilecible, tilerep);
+		}
 	}
 
 	public Tile[][][] getTiles() {
@@ -134,6 +181,10 @@ public class Level {
 
 	public void setSizeY(int sizeY) {
 		this.sizeY = sizeY;
+	}
+	
+	public void setPath(String path) {
+		this.path = path;
 	}
 	
 }

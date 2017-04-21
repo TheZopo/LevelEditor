@@ -47,7 +47,7 @@ public class MenuItem {
 	}
 	
 	public void update() {
-		if(CursorManager.isInRect(posX, 0, width, height) && MouseManager.isDown(GLFW.GLFW_MOUSE_BUTTON_LEFT)) callback.callback();
+		if(CursorManager.isInRect(posX, 0, width, height) && MouseManager.isDown(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0)) callback.callback();
 	}
 
 	public int getPosX() {
