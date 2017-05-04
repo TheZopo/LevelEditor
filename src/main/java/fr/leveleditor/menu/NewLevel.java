@@ -16,6 +16,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import fr.leveleditor.LevelEditor;
 import fr.leveleditor.level.Level;
+import fr.leveleditor.utils.Utils;
 
 public class NewLevel extends JFrame implements ActionListener {
 	private static final long serialVersionUID = 1L;
@@ -78,12 +79,17 @@ public class NewLevel extends JFrame implements ActionListener {
 		}
 		else if(event.getSource().equals(submit)) {
 			if(name.getText() != null && sizeX.getText() != null && sizeY.getText() != null && selectedFile != null) {
-				Level level = new Level(name.getText(), Integer.parseInt(sizeX.getText()), Integer.parseInt(sizeY.getText()));
-				level.setPath(selectedFile.getAbsolutePath());
-				level.save();
-				
-				LevelEditor.instance.setLevel(level);
-				this.setVisible(false);
+				if(Utils.isNumeric(sizeX.getText()) && Utils.isNumeric(sizeY.getText())) {
+					Level level = new Level(name.getText(), Integer.parseInt(sizeX.getText()), Integer.parseInt(sizeY.getText()));
+					level.setPath(selectedFile.getAbsolutePath());
+					level.save();
+					
+					LevelEditor.instance.setLevel(level);
+					this.setVisible(false);					
+				}
+				else {
+					JOptionPane.showMessageDialog(null, "Les champs taille X et taille Y attendent un nombre !", "Erreur !", JOptionPane.ERROR_MESSAGE);					
+				}
 			}
 			else {
 				JOptionPane.showMessageDialog(null, "Veuillez remplir tous les champs ou spécifier un fichier valide !", "Erreur !", JOptionPane.ERROR_MESSAGE);

@@ -13,7 +13,7 @@
 	<build>
 		<resources>
 			<resource>
-				<targetPath>/resources</targetPath>
+				<targetPath>resources/</targetPath>
 				<directory>${basedir}/src/main/resources</directory>
 			</resource>
 		</resources>

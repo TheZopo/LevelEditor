@@ -54,7 +54,7 @@ public class Level {
 		}
 		
 		try {
-			this.path = Level.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "/" + name + ".yml";
+			this.path = LevelEditor.class.getProtectionDomain().getCodeSource().getLocation().toURI().resolve(".").getPath() + name + ".yml";
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		}
@@ -63,7 +63,7 @@ public class Level {
 	public static Level load(String name) {
 		Level level = null;
 		try {
-			File f = new File(Level.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "/" + name + ".yml");
+			File f = new File(LevelEditor.class.getProtectionDomain().getCodeSource().getLocation().toURI().resolve(".").getPath() + name + ".yml");
 			
 			if(f.exists()) {
 				YamlReader reader = new YamlReader(new FileReader(f));
@@ -108,7 +108,6 @@ public class Level {
 		try {
 			File f = new File(path);
 			f.createNewFile();
-			Logger.info(path);
 			
 			YamlWriter writer = new YamlWriter(new FileWriter(f));
 			writer.write(this);

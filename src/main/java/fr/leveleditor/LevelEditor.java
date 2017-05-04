@@ -37,8 +37,8 @@ public class LevelEditor {
 	private int maxFPS = 60;
 	private int tileRes = 32;
 	
-	private static int width = 1000;
-	private int height = 700;
+	private static int width = 1280;
+	private int height = 720;
 	private String title = "Editeur de niveau";
 	
 	private boolean running = false;
