@@ -46,6 +46,11 @@ public class LevelEditor {
 	private Menu menu;
 	
 	private Tile selectedTile;
+	
+	private int[] pos1 = {0, 0};
+	private int[] pos2 = {0, 0};
+	private boolean isSelecting = false;
+	
 	private int[] overTile = {0, 0};
 	private int activeLayer = 0;
 	private int tool = 0;
@@ -97,7 +102,7 @@ public class LevelEditor {
 		}
 		
 		level = Level.load("current");
-		selectedTile = Tile.NULL;
+		selectedTile = Tile.GRASS;
 		
 	    try { 
 	    	UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -233,7 +238,26 @@ public class LevelEditor {
 		int layer = activeLayer < 3 ? activeLayer : 2;
 		if(MouseManager.isDown(GLFW_MOUSE_BUTTON_LEFT, 0) && CursorManager.posY > 32) {
 			if(x >= 0 && x < level.getSizeX() && y >= 0 && y < level.getSizeY()) {
-				if(tool == 0) level.getTiles()[layer][x][y] = selectedTile;
+				if(tool == 0) {
+					int[] t1 = pos1.clone();
+					int[] t2 = pos2.clone();
+
+					if(t2[0] < t1[0]) {
+						t1[0] = pos2[0];
+						t2[0] = pos1[0];
+					}
+					
+					if(t2[1] < t1[1]) {
+						t1[1] = pos2[1];
+						t2[1] = pos1[1];
+					}
+
+					for(int i = 0; i < t2[0] - t1[0] + 1; i++) {
+						for(int j = 0; j < t2[1] - t1[1] + 1; j++) {
+							if(x + i >= 0 && y + j - (t2[1] - t1[1]) >= 0) level.getTiles()[layer][x + i][y + j - (t2[1] - t1[1])] = Tile.fromCoord(t1[0] + i, t1[1] + j);							
+						}
+					}
+				}
 				else if(tool == 1) level.remplissageDiffusion(layer, x, y, level.getTiles()[layer][x][y], selectedTile);
 				else if(tool == 2) level.getTiles()[layer][x][y] = Tile.NULL;
 			}
@@ -247,8 +271,23 @@ public class LevelEditor {
 		}
 		
 		if(MouseManager.isDown(GLFW_MOUSE_BUTTON_LEFT, 1)) {
-			selectedTile = Tile.fromCoord(CursorManager.posX / tileRes, CursorManager.posY / tileRes);
+			if(!isSelecting) {
+				pos1[0] = CursorManager.posX / tileRes;
+				pos1[1] = CursorManager.posY / tileRes;
+				selectedTile = Tile.fromCoord(pos1[0], pos1[1]);
+			}
+			isSelecting = true;
+			
+			pos2[0] = CursorManager.posX / tileRes;
+			pos2[1] = CursorManager.posY / tileRes;
+			
 			if(tool == 2) tool = 0;
+		}
+		
+		
+		if(!MouseManager.isDown(GLFW_MOUSE_BUTTON_LEFT, 1)) {
+			isSelecting = false;
+			if(tool == 1 || tool == 2) pos2 = pos1.clone();
 		}
 		
 		if(CursorManager.window == 0) {
@@ -279,13 +318,15 @@ public class LevelEditor {
 					glVertex2f(0, 32);
 				glEnd();
 				
+				int sizeX = Math.abs(pos2[0] - pos1[0]) + 1;
+				int sizeY = Math.abs(pos2[1] - pos1[1]) + 1;
 				glBegin(GL_LINE_LOOP);
 					glColor4f(0, 0, 0, 1);
-					glVertex2f(overTile[0] * scale, 32 + overTile[1] * scale + 1);
-					glVertex2f((overTile[0] + 1) * scale, 32 + overTile[1] * scale + 1);
-					glVertex2f((overTile[0] + 1) * scale, 32 + (overTile[1] + 1) * scale);
-					glVertex2f(overTile[0] * scale, 32 + (overTile[1] + 1) * scale);
-					glVertex2f(overTile[0] * scale, 32 + overTile[1] * scale + 1);
+					glVertex2f(overTile[0] * scale, 32 + (overTile[1] + 1) * scale + 1);
+					glVertex2f((overTile[0] + sizeX) * scale, 32 + (overTile[1] + 1) * scale + 1);
+					glVertex2f((overTile[0] + sizeX) * scale, 32 + (overTile[1] + 1 - sizeY) * scale);
+					glVertex2f(overTile[0] * scale, 32 + (overTile[1] + 1 - sizeY) * scale);
+					glVertex2f(overTile[0] * scale, 32 + (overTile[1] + 1) * scale + 1);
 					glColor4f(1, 1, 1, 1);
 				glEnd();
 				
@@ -305,13 +346,26 @@ public class LevelEditor {
 				glEnd();
 				Texture.tiles.unbind();
 				
+				int[] t1 = pos1.clone();
+				int[] t2 = pos2.clone();
+				
+				if(t2[0] < t1[0]) {
+					t1[0] = pos2[0];
+					t2[0] = pos1[0];
+				}
+				
+				if(t2[1] < t1[1]) {
+					t1[1] = pos2[1];
+					t2[1] = pos1[1];
+				}
+				
 				glBegin(GL_LINE_LOOP);
 					glColor4f(1, 0, 0, 1);
-					glVertex2f(selectedTile.getX() * tileRes, selectedTile.getY() * tileRes + 1);
-					glVertex2f((selectedTile.getX() + 1) * tileRes, selectedTile.getY() * tileRes + 1);
-					glVertex2f((selectedTile.getX() + 1) * tileRes, (selectedTile.getY() + 1) * tileRes);
-					glVertex2f(selectedTile.getX() * tileRes + 1, (selectedTile.getY() + 1) * tileRes);
-					glVertex2f(selectedTile.getX() * tileRes + 1, selectedTile.getY() * tileRes + 1);
+					glVertex2f(t1[0] * tileRes, t1[1] * tileRes + 1);
+					glVertex2f((t2[0] + 1) * tileRes, t1[1] * tileRes + 1);
+					glVertex2f((t2[0] + 1) * tileRes, (t2[1] + 1) * tileRes);
+					glVertex2f(t1[0] * tileRes + 1, (t2[1] + 1) * tileRes);
+					glVertex2f(t1[0] * tileRes + 1, t1[1] * tileRes + 1);
 					glColor4f(1, 1, 1, 1);
 				glEnd();
 			}
